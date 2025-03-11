@@ -70,14 +70,14 @@ export default function Auth() {
     setIsLoading(true);
     
     try {
-      // Pass first_name and last_name as profile data
       await signUp(signupEmail, signupPassword, signupRole, {
         first_name: firstName,
         last_name: lastName
       });
       toast.success('Account created successfully! You can now log in.');
-      // Switch to login tab after successful signup
-      document.querySelector('[data-state="inactive"][data-value="login"]')?.click();
+      // Type cast the element to HTMLElement before calling click()
+      const loginTab = document.querySelector('[data-state="inactive"][data-value="login"]') as HTMLElement;
+      loginTab?.click();
     } catch (error: any) {
       toast.error(error.message || 'Error creating account');
       console.error('Signup error:', error);
