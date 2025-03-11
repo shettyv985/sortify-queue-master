@@ -10,7 +10,7 @@ import { SignupForm } from '@/components/auth/SignupForm';
 export default function Auth() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const loginTabRef = useRef<HTMLButtonElement>(null);
 
   // Redirect if already logged in
@@ -19,10 +19,9 @@ export default function Auth() {
       const redirectPath = location.state?.from?.pathname || getDashboardByRole();
       navigate(redirectPath, { replace: true });
     }
-  }, [user, navigate, location]);
+  }, [user, navigate, location, profile]);
 
   const getDashboardByRole = () => {
-    const { profile } = useAuth();
     if (!profile) return '/dashboard/user';
     
     switch (profile.role) {

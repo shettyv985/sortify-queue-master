@@ -1,13 +1,16 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Menu, X } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const Header: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -21,6 +24,18 @@ export const Header: React.FC = () => {
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [location.pathname]);
+
+  const handleAuth = () => {
+    navigate('/auth');
+  };
+
+  const handleDashboard = () => {
+    if (user) {
+      navigate('/dashboard');
+    } else {
+      navigate('/auth');
+    }
+  };
 
   const navLinks = [
     { name: 'Home', path: '/' },
@@ -65,18 +80,31 @@ export const Header: React.FC = () => {
 
         {/* Action Buttons */}
         <div className="hidden md:flex items-center space-x-4">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="h-9 px-4 transition-all duration-300 hover:bg-primary/5"
-          >
-            Log in
-          </Button>
+          {user ? (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-9 px-4 transition-all duration-300 hover:bg-primary/5"
+              onClick={signOut}
+            >
+              Sign Out
+            </Button>
+          ) : (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-9 px-4 transition-all duration-300 hover:bg-primary/5"
+              onClick={handleAuth}
+            >
+              Log in
+            </Button>
+          )}
           <Button 
             size="sm" 
             className="h-9 px-4 bg-primary hover:bg-primary/90 transition-all duration-300"
+            onClick={handleDashboard}
           >
-            Get Started
+            {user ? 'Dashboard' : 'Get Started'}
           </Button>
         </div>
 
@@ -113,16 +141,28 @@ export const Header: React.FC = () => {
             ))}
           </nav>
           <div className="flex flex-col space-y-3 pt-4 border-t border-border">
-            <Button 
-              variant="outline" 
-              className="w-full transition-all duration-300 hover:bg-primary/5"
-            >
-              Log in
-            </Button>
+            {user ? (
+              <Button 
+                variant="outline" 
+                className="w-full transition-all duration-300 hover:bg-primary/5"
+                onClick={signOut}
+              >
+                Sign Out
+              </Button>
+            ) : (
+              <Button 
+                variant="outline" 
+                className="w-full transition-all duration-300 hover:bg-primary/5"
+                onClick={handleAuth}
+              >
+                Log in
+              </Button>
+            )}
             <Button 
               className="w-full bg-primary hover:bg-primary/90 transition-all duration-300"
+              onClick={handleDashboard}
             >
-              Get Started
+              {user ? 'Dashboard' : 'Get Started'}
             </Button>
           </div>
         </div>

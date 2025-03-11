@@ -2,8 +2,31 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { ChevronRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const Hero: React.FC = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const handleGetStarted = () => {
+    if (user) {
+      // If user is logged in, redirect to their dashboard
+      navigate('/dashboard');
+    } else {
+      // If user is not logged in, redirect to auth page
+      navigate('/auth');
+    }
+  };
+
+  const handleLearnMore = () => {
+    // Scroll to features section or navigate to a different page
+    const featuresSection = document.querySelector('#features');
+    if (featuresSection) {
+      featuresSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <section className="relative pt-32 pb-20 md:pt-40 md:pb-32 overflow-hidden">
       {/* Background effect */}
@@ -36,14 +59,16 @@ export const Hero: React.FC = () => {
             <Button 
               size="lg" 
               className="w-full sm:w-auto px-8 py-6 bg-primary hover:bg-primary/90 transition-all duration-300"
+              onClick={handleGetStarted}
             >
-              Get Started
+              {user ? 'Go to Dashboard' : 'Get Started'}
               <ChevronRight size={16} className="ml-1" />
             </Button>
             <Button 
               variant="outline" 
               size="lg" 
               className="w-full sm:w-auto px-8 py-6 border-primary/20 text-foreground hover:bg-primary/5 transition-all duration-300"
+              onClick={handleLearnMore}
             >
               Learn More
             </Button>
