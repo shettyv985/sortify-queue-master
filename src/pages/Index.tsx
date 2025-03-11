@@ -1,13 +1,11 @@
-
 import React, { useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { Hero } from '@/components/Hero';
 import { Features } from '@/components/Features';
 import { Button } from '@/components/ui/button';
-import { Mic, Users, ClipboardList, Check } from 'lucide-react';
+import { Mic, Users, ClipboardList, Check, SlidersHorizontal } from 'lucide-react';
 
 const Index: React.FC = () => {
-  // Add smooth animation on scroll
   useEffect(() => {
     const observerOptions = {
       root: null,
@@ -34,13 +32,10 @@ const Index: React.FC = () => {
 
   return (
     <Layout>
-      {/* Hero Section */}
       <Hero />
       
-      {/* Features Section */}
       <Features />
       
-      {/* Role Section */}
       <section className="py-20 md:py-32 bg-secondary/30">
         <div className="container mx-auto px-4 md:px-6">
           <div className="text-center max-w-3xl mx-auto mb-16">
@@ -53,7 +48,6 @@ const Index: React.FC = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Admin Role */}
             <div className="bg-white rounded-xl shadow-sm p-8 border border-border animate-on-scroll opacity-0 transition-all duration-300 hover:shadow-md hover:border-primary/20">
               <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-6">
                 <ClipboardList size={24} className="text-primary" />
@@ -76,7 +70,6 @@ const Index: React.FC = () => {
               <Button variant="outline" className="w-full">Learn More</Button>
             </div>
             
-            {/* Customer Role */}
             <div className="bg-white rounded-xl shadow-sm p-8 border border-border animate-on-scroll opacity-0 transition-all duration-300 hover:shadow-md hover:border-primary/20" style={{ animationDelay: '100ms' }}>
               <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-6">
                 <SlidersHorizontal size={24} className="text-primary" />
@@ -99,7 +92,6 @@ const Index: React.FC = () => {
               <Button variant="outline" className="w-full">Learn More</Button>
             </div>
             
-            {/* End User Role */}
             <div className="bg-white rounded-xl shadow-sm p-8 border border-border animate-on-scroll opacity-0 transition-all duration-300 hover:shadow-md hover:border-primary/20" style={{ animationDelay: '200ms' }}>
               <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-6">
                 <Users size={24} className="text-primary" />
@@ -125,7 +117,6 @@ const Index: React.FC = () => {
         </div>
       </section>
       
-      {/* Accessibility Section */}
       <section className="py-20 md:py-32 bg-white">
         <div className="container mx-auto px-4 md:px-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -157,7 +148,6 @@ const Index: React.FC = () => {
             </div>
             
             <div className="relative animate-on-scroll opacity-0" style={{ animationDelay: '100ms' }}>
-              {/* Mic Button Illustration */}
               <div className="relative bg-gray-50 rounded-2xl p-8 border border-border overflow-hidden">
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-primary/20 rounded-full animate-pulse-slow"></div>
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-20 h-20 bg-primary/30 rounded-full animate-pulse-slow" style={{ animationDelay: '1s' }}></div>
@@ -167,7 +157,6 @@ const Index: React.FC = () => {
                   </div>
                 </div>
                 
-                {/* Speech Output Illustration */}
                 <div className="relative bg-white rounded-xl p-4 shadow-sm border border-border max-w-xs mx-auto">
                   <p className="text-sm font-medium mb-2">Speech Recognition</p>
                   <p className="text-sm text-foreground/80 mb-3">
@@ -190,7 +179,6 @@ const Index: React.FC = () => {
         </div>
       </section>
       
-      {/* CTA Section */}
       <section className="py-20 md:py-32 bg-primary clip-path-slant">
         <div className="container mx-auto px-4 md:px-6 text-center">
           <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-6 text-white animate-on-scroll opacity-0">
@@ -205,7 +193,6 @@ const Index: React.FC = () => {
         </div>
       </section>
       
-      {/* Footer */}
       <footer className="py-12 bg-secondary/40">
         <div className="container mx-auto px-4 md:px-6">
           <div className="flex flex-col md:flex-row justify-between items-center">
