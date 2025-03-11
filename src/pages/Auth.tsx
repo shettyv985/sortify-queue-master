@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -8,11 +8,13 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { toast } from 'sonner';
 
 export default function Auth() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
   // Login form state
@@ -26,14 +28,36 @@ export default function Auth() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
 
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      const redirectPath = location.state?.from?.pathname || getDashboardByRole();
+      navigate(redirectPath, { replace: true });
+    }
+  }, [user, navigate, location]);
+
+  const getDashboardByRole = () => {
+    const { profile } = useAuth();
+    if (!profile) return '/dashboard/user';
+    
+    switch (profile.role) {
+      case 'admin':
+        return '/dashboard/admin';
+      case 'customer':
+        return '/dashboard/customer';
+      default:
+        return '/dashboard/user';
+    }
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
     try {
       await signIn(loginEmail, loginPassword);
-      const from = (location.state as any)?.from?.pathname || '/dashboard/user';
-      navigate(from, { replace: true });
+      // Redirection is handled by the useEffect hook
+      toast.success('Logged in successfully!');
     } catch (error) {
       console.error('Login error:', error);
     } finally {
@@ -46,9 +70,16 @@ export default function Auth() {
     setIsLoading(true);
     
     try {
-      await signUp(signupEmail, signupPassword, signupRole);
-      // Signup success - user will need to verify email
-    } catch (error) {
+      // Pass first_name and last_name as profile data
+      await signUp(signupEmail, signupPassword, signupRole, {
+        first_name: firstName,
+        last_name: lastName
+      });
+      toast.success('Account created successfully! You can now log in.');
+      // Switch to login tab after successful signup
+      document.querySelector('[data-state="inactive"][data-value="login"]')?.click();
+    } catch (error: any) {
+      toast.error(error.message || 'Error creating account');
       console.error('Signup error:', error);
     } finally {
       setIsLoading(false);
@@ -124,6 +155,7 @@ export default function Auth() {
                       placeholder="John"
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
+                      required
                     />
                   </div>
                   <div className="space-y-2">
@@ -133,6 +165,7 @@ export default function Auth() {
                       placeholder="Doe"
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
+                      required
                     />
                   </div>
                 </div>
@@ -159,23 +192,28 @@ export default function Auth() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="role">Sign Up As</Label>
-                  <Select
-                    value={signupRole}
-                    onValueChange={(value: any) => setSignupRole(value)}
+                  <Label>Sign Up As</Label>
+                  <RadioGroup 
+                    value={signupRole} 
+                    onValueChange={(value: 'user' | 'customer' | 'admin') => setSignupRole(value)}
+                    className="flex flex-col space-y-1"
                   >
-                    <SelectTrigger id="role">
-                      <SelectValue placeholder="Select Role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="user">User</SelectItem>
-                      <SelectItem value="customer">Customer (Service Provider)</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="user" id="user" />
+                      <Label htmlFor="user" className="font-normal cursor-pointer">User (End-User)</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="customer" id="customer" />
+                      <Label htmlFor="customer" className="font-normal cursor-pointer">Customer (Service Provider)</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="admin" id="admin" />
+                      <Label htmlFor="admin" className="font-normal cursor-pointer">Admin (System Administrator)</Label>
+                    </div>
+                  </RadioGroup>
                 </div>
               </CardContent>
-              <CardFooter>
+              <CardFooter className="flex flex-col space-y-2">
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? (
                     <div className="flex items-center">
@@ -186,6 +224,9 @@ export default function Auth() {
                     'Create Account'
                   )}
                 </Button>
+                <p className="text-xs text-center text-muted-foreground">
+                  By creating an account, you agree to our Terms of Service and Privacy Policy.
+                </p>
               </CardFooter>
             </form>
           </TabsContent>

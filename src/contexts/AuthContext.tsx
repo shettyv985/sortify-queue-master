@@ -19,7 +19,15 @@ type AuthContextType = {
   session: Session | null;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, role?: 'admin' | 'customer' | 'user') => Promise<void>;
+  signUp: (
+    email: string, 
+    password: string, 
+    role?: 'admin' | 'customer' | 'user',
+    profileData?: {
+      first_name?: string;
+      last_name?: string;
+    }
+  ) => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (data: Partial<UserProfile>) => Promise<void>;
 };
@@ -108,23 +116,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signUp = async (email: string, password: string, role: 'admin' | 'customer' | 'user' = 'user') => {
+  const signUp = async (
+    email: string, 
+    password: string, 
+    role: 'admin' | 'customer' | 'user' = 'user',
+    profileData?: {
+      first_name?: string;
+      last_name?: string;
+    }
+  ) => {
     try {
-      const { error } = await supabase.auth.signUp({
+      // Register the user with Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             role,
+            ...profileData
           },
         },
       });
 
-      if (error) {
-        throw error;
+      if (authError) {
+        throw authError;
       }
 
-      toast.success('Signed up successfully. Please check your email for verification.');
+      // Update the profile with additional data if needed
+      if (authData.user && (profileData?.first_name || profileData?.last_name)) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({
+            first_name: profileData.first_name || null,
+            last_name: profileData.last_name || null,
+            role: role
+          })
+          .eq('id', authData.user.id);
+
+        if (profileError) {
+          console.error('Error updating profile:', profileError);
+        }
+      }
+
+      toast.success('Signed up successfully. You can now log in with your credentials.');
     } catch (error: any) {
       toast.error(error.message || 'Error signing up');
       throw error;
