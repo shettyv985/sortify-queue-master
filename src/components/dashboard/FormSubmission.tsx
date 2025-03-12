@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -41,7 +40,6 @@ const FormSubmission = () => {
   const queryClient = useQueryClient();
   const [submitting, setSubmitting] = useState(false);
 
-  // Fetch form details
   const { data: formData, isLoading: formLoading, error: formError } = useQuery({
     queryKey: ['form', formId],
     queryFn: async () => {
@@ -62,7 +60,6 @@ const FormSubmission = () => {
     enabled: !!formId && !!user,
   });
 
-  // Generate dynamic form schema based on form fields
   const generateFormSchema = (fields: FormField[]) => {
     if (!fields || fields.length === 0) return z.object({});
     
@@ -70,16 +67,15 @@ const FormSubmission = () => {
     
     fields.sort((a, b) => a.order_index - b.order_index).forEach(field => {
       if (field.required) {
-        schemaObj[field.id] = z.string().min(1, `${field.label} is required`);
+        schemaObj[field.id as string] = z.string().min(1, `${field.label} is required`);
       } else {
-        schemaObj[field.id] = z.string().optional();
+        schemaObj[field.id as string] = z.string().optional();
       }
     });
     
     return z.object(schemaObj);
   };
   
-  // Create the dynamic form schema
   const formSchema = React.useMemo(() => {
     if (formData?.form_fields) {
       return generateFormSchema(formData.form_fields);
@@ -87,19 +83,16 @@ const FormSubmission = () => {
     return z.object({});
   }, [formData]);
 
-  // Create form with react-hook-form
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {},
     mode: 'onChange',
   });
 
-  // Form submission mutation
   const submitFormMutation = useMutation({
     mutationFn: async (formValues: Record<string, string>) => {
       if (!user || !formId) throw new Error('User ID and Form ID are required');
       
-      // Create the form submission
       const { data, error } = await supabase
         .from('submissions')
         .insert({
@@ -112,17 +105,18 @@ const FormSubmission = () => {
       
       if (error) throw error;
       
-      // Add the user to the queue
       if (formData && data) {
+        const organization_id = (formData as any).organization_id || '00000000-0000-0000-0000-000000000000';
+        
         const { error: queueError } = await supabase
           .from('queue_entries')
           .insert({
             user_id: user.id,
-            organization_id: formData.organization_id,
+            organization_id,
             submission_id: data.id,
-            queue_number: `${Date.now()}`, // Simple queue number generation
+            queue_number: `${Date.now()}`,
             status: 'waiting',
-            priority_score: 0, // Default priority
+            priority_score: 0,
           });
         
         if (queueError) throw queueError;
