@@ -3,14 +3,17 @@ import React from 'react';
 import { Header } from './Header';
 import { SpeechToText } from './SpeechToText';
 import { useAuth } from '@/contexts/AuthContext';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, Navigate } from 'react-router-dom';
 import { 
   Building2, 
   LayoutDashboard, 
   FileText, 
   Users, 
   Settings, 
-  ListOrdered
+  ListOrdered,
+  BarChart,
+  MessageSquare,
+  Calendar
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -20,6 +23,30 @@ interface LayoutProps {
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { profile } = useAuth();
   const location = useLocation();
+
+  // Redirect based on role
+  if (profile) {
+    // If accessing root dashboard, redirect to role-specific dashboard
+    if (location.pathname === '/dashboard') {
+      if (profile.role === 'admin') {
+        return <Navigate to="/dashboard/admin" replace />;
+      } else if (profile.role === 'customer') {
+        return <Navigate to="/dashboard/customer" replace />;
+      } else {
+        return <Navigate to="/dashboard/user" replace />;
+      }
+    }
+    
+    // Enforce role-specific access to dashboards
+    if (
+      (profile.role !== 'admin' && location.pathname.startsWith('/dashboard/admin')) ||
+      (profile.role !== 'customer' && location.pathname.startsWith('/dashboard/customer')) ||
+      (profile.role !== 'user' && location.pathname.startsWith('/dashboard/user'))
+    ) {
+      const correctPath = `/dashboard/${profile.role}`;
+      return <Navigate to={correctPath} replace />;
+    }
+  }
 
   const renderSidebar = () => {
     if (!profile) return null;
@@ -32,13 +59,17 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         { path: '/organizations', label: 'Organizations', icon: <Building2 className="h-5 w-5 mr-2" /> },
         { path: '/forms', label: 'Forms', icon: <FileText className="h-5 w-5 mr-2" /> },
         { path: '/users', label: 'Users', icon: <Users className="h-5 w-5 mr-2" /> },
+        { path: '/analytics', label: 'Analytics', icon: <BarChart className="h-5 w-5 mr-2" /> },
         { path: '/settings', label: 'Settings', icon: <Settings className="h-5 w-5 mr-2" /> },
       ];
     } else if (profile.role === 'customer') {
       navItems = [
         { path: '/dashboard/customer', label: 'Dashboard', icon: <LayoutDashboard className="h-5 w-5 mr-2" /> },
-        { path: '/queue', label: 'Queue', icon: <ListOrdered className="h-5 w-5 mr-2" /> },
-        { path: '/forms', label: 'Forms', icon: <FileText className="h-5 w-5 mr-2" /> },
+        { path: '/forms', label: 'Manage Forms', icon: <FileText className="h-5 w-5 mr-2" /> },
+        { path: '/submissions', label: 'View Submissions', icon: <ListOrdered className="h-5 w-5 mr-2" /> },
+        { path: '/analytics', label: 'Analytics', icon: <BarChart className="h-5 w-5 mr-2" /> },
+        { path: '/messages', label: 'User Interactions', icon: <MessageSquare className="h-5 w-5 mr-2" /> },
+        { path: '/calendar', label: 'Appointments', icon: <Calendar className="h-5 w-5 mr-2" /> },
         { path: '/settings', label: 'Settings', icon: <Settings className="h-5 w-5 mr-2" /> },
       ];
     } else {

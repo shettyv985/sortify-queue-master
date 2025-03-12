@@ -17,6 +17,23 @@ import { toast } from 'sonner';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Json } from '@/integrations/supabase/types';
 
+interface FormField {
+  id: string;
+  label: string;
+  type: string;
+  required: boolean | null;
+  order_index: number;
+  options?: any[] | null;
+  description?: string;
+}
+
+interface FormData {
+  id: string;
+  title: string;
+  description: string | null;
+  form_fields: FormField[];
+}
+
 const FormSubmission = () => {
   const { formId } = useParams();
   const { user } = useAuth();
@@ -40,27 +57,23 @@ const FormSubmission = () => {
         .single();
       
       if (error) throw error;
-      return data;
+      return data as FormData;
     },
     enabled: !!formId && !!user,
   });
 
   // Generate dynamic form schema based on form fields
-  const generateFormSchema = (fields) => {
+  const generateFormSchema = (fields: FormField[]) => {
     if (!fields || fields.length === 0) return z.object({});
     
-    const schemaObj = {};
+    const schemaObj: Record<string, z.ZodTypeAny> = {};
     
     fields.sort((a, b) => a.order_index - b.order_index).forEach(field => {
-      let fieldSchema = z.string();
-      
       if (field.required) {
-        fieldSchema = fieldSchema.min(1, `${field.label} is required`);
+        schemaObj[field.id] = z.string().min(1, `${field.label} is required`);
       } else {
-        fieldSchema = z.string().optional();
+        schemaObj[field.id] = z.string().optional();
       }
-      
-      schemaObj[field.id] = fieldSchema;
     });
     
     return z.object(schemaObj);
@@ -83,7 +96,7 @@ const FormSubmission = () => {
 
   // Form submission mutation
   const submitFormMutation = useMutation({
-    mutationFn: async (formValues) => {
+    mutationFn: async (formValues: Record<string, string>) => {
       if (!user || !formId) throw new Error('User ID and Form ID are required');
       
       // Create the form submission
@@ -92,7 +105,7 @@ const FormSubmission = () => {
         .insert({
           form_id: formId,
           user_id: user.id,
-          data: formValues
+          data: formValues as Json
         })
         .select('id')
         .single();
@@ -100,18 +113,20 @@ const FormSubmission = () => {
       if (error) throw error;
       
       // Add the user to the queue
-      const { error: queueError } = await supabase
-        .from('queue_entries')
-        .insert({
-          user_id: user.id,
-          organization_id: formData.organization_id,
-          submission_id: data.id,
-          queue_number: `${Date.now()}`, // Simple queue number generation
-          status: 'waiting',
-          priority_score: 0, // Default priority
-        });
-      
-      if (queueError) throw queueError;
+      if (formData && data) {
+        const { error: queueError } = await supabase
+          .from('queue_entries')
+          .insert({
+            user_id: user.id,
+            organization_id: formData.organization_id,
+            submission_id: data.id,
+            queue_number: `${Date.now()}`, // Simple queue number generation
+            status: 'waiting',
+            priority_score: 0, // Default priority
+          });
+        
+        if (queueError) throw queueError;
+      }
       
       return data;
     },
@@ -127,7 +142,7 @@ const FormSubmission = () => {
     },
   });
 
-  const onSubmit = async (data) => {
+  const onSubmit = async (data: Record<string, string>) => {
     setSubmitting(true);
     try {
       await submitFormMutation.mutateAsync(data);
@@ -192,9 +207,11 @@ const FormSubmission = () => {
                               <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
                             </SelectTrigger>
                             <SelectContent>
-                              {Array.isArray(field.options) && field.options.map((option, index) => {
-                                const optionValue = typeof option === 'object' ? option.value || '' : option;
-                                const optionLabel = typeof option === 'object' ? option.label || optionValue : option;
+                              {Array.isArray(field.options) && field.options.map((option: any, index) => {
+                                const optionValue = typeof option === 'object' && option !== null ? 
+                                  String(option.value || '') : String(option);
+                                const optionLabel = typeof option === 'object' && option !== null ? 
+                                  String(option.label || optionValue) : String(option);
                                 return (
                                   <SelectItem key={index} value={optionValue}>
                                     {optionLabel}
@@ -205,7 +222,7 @@ const FormSubmission = () => {
                           </Select>
                         )}
                       </FormControl>
-                      {field.hasOwnProperty('description') && (
+                      {field.description && (
                         <FormDescription>{field.description}</FormDescription>
                       )}
                       <FormMessage />

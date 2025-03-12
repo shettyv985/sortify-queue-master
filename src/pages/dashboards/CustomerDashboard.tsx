@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
@@ -10,7 +11,11 @@ import {
   BarChart, 
   Users, 
   CheckCircle, 
-  XCircle 
+  XCircle,
+  LineChart,
+  Calendar,
+  MessageSquare,
+  Settings
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -20,6 +25,7 @@ import { QuickActions } from '@/components/dashboard/QuickActions';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function CustomerDashboard() {
   const { profile, signOut } = useAuth();
@@ -55,7 +61,7 @@ export default function CustomerDashboard() {
         const { data: submissionsData, error: submissionsError } = await supabase
           .from('submissions')
           .select('id', { count: 'exact' })
-          .eq('form_id', formId => formsData?.map(form => form.id).includes(formId));
+          .in('form_id', formsData?.map(form => form.id) || []);
           
         if (submissionsError) throw submissionsError;
         
@@ -105,20 +111,27 @@ export default function CustomerDashboard() {
   });
 
   const handleCreateForm = () => {
-    // Navigate to form creation page
     navigate('/forms/create');
     toast.success('Form creation feature coming soon!');
   };
 
   const handleViewPending = () => {
-    // Navigate to pending submissions
     navigate('/submissions/pending');
     toast.success('Pending submissions feature coming soon!');
   };
 
   const handleDownloadReports = () => {
-    // Download reports logic
     toast.success('Reports download feature coming soon!');
+  };
+
+  const handleViewAnalytics = () => {
+    navigate('/analytics');
+    toast.success('Analytics feature coming soon!');
+  };
+
+  const handleViewSettings = () => {
+    navigate('/settings');
+    toast.success('Settings feature coming soon!');
   };
 
   return (
@@ -169,7 +182,7 @@ export default function CustomerDashboard() {
           />
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           {/* Recent Activity Panel */}
           <div className="lg:col-span-2">
             <Card className="h-full">
@@ -212,6 +225,16 @@ export default function CustomerDashboard() {
                       icon: <Download className="h-5 w-5" />,
                       label: "Download Reports",
                       onClick: handleDownloadReports
+                    },
+                    {
+                      icon: <BarChart className="h-5 w-5" />,
+                      label: "View Analytics",
+                      onClick: handleViewAnalytics
+                    },
+                    {
+                      icon: <Settings className="h-5 w-5" />,
+                      label: "Settings",
+                      onClick: handleViewSettings
                     }
                   ]}
                 />
@@ -219,6 +242,83 @@ export default function CustomerDashboard() {
             </Card>
           </div>
         </div>
+        
+        {/* Analytics Preview Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <LineChart className="mr-2 h-5 w-5 text-primary" />
+                Form Submission Trends
+              </CardTitle>
+              <CardDescription>
+                Submission activity over the past 30 days
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="h-64 flex items-center justify-center">
+              {statsLoading ? (
+                <Skeleton className="w-full h-full rounded-md" />
+              ) : (
+                <div className="text-center text-muted-foreground">
+                  <BarChart className="h-10 w-10 mx-auto mb-4 text-muted-foreground/60" />
+                  <p>Analytics dashboard is coming soon!</p>
+                  <p className="text-sm">Detailed charts and reports will be available here.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Calendar className="mr-2 h-5 w-5 text-primary" />
+                Upcoming Events
+              </CardTitle>
+              <CardDescription>
+                Scheduled appointments and deadlines
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="h-64 flex items-center justify-center">
+              {statsLoading ? (
+                <Skeleton className="w-full h-full rounded-md" />
+              ) : (
+                <div className="text-center text-muted-foreground">
+                  <Calendar className="h-10 w-10 mx-auto mb-4 text-muted-foreground/60" />
+                  <p>Calendar integration is coming soon!</p>
+                  <p className="text-sm">Track appointments and deadlines in real-time.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+        
+        {/* User Engagement Section */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <MessageSquare className="mr-2 h-5 w-5 text-primary" />
+              User Engagement
+            </CardTitle>
+            <CardDescription>
+              Recent communications and user interactions
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {statsLoading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <Skeleton key={i} className="w-full h-16 rounded-md" />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <MessageSquare className="h-10 w-10 mx-auto mb-4 text-muted-foreground/60" />
+                <p>User communications feature is coming soon!</p>
+                <p className="text-sm">Track and respond to user feedback in one place.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </Layout>
   );
