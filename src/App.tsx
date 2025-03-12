@@ -13,6 +13,8 @@ import NotFound from "./pages/NotFound";
 import React, { useEffect } from "react";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { DashboardLayout } from "./components/dashboard/DashboardLayout";
+import { Link } from "lucide-react";
 
 const queryClient = new QueryClient();
 
@@ -54,15 +56,21 @@ const AppRoutes = () => {
         } 
       />
       
-      {/* User Routes */}
+      {/* User Routes with Dashboard Layout */}
       <Route 
         path="/dashboard/user" 
         element={
           <ProtectedRoute allowedRoles={['user']}>
-            <UserDashboard />
+            <DashboardLayout />
           </ProtectedRoute>
-        } 
-      />
+        }
+      >
+        <Route index element={<UserDashboard />} />
+        <Route path="forms" element={<div className="p-6">Forms page content</div>} />
+        <Route path="queue" element={<div className="p-6">Queue position page content</div>} />
+        <Route path="profile" element={<div className="p-6">Profile page content</div>} />
+        <Route path="help" element={<div className="p-6">Help & Accessibility page content</div>} />
+      </Route>
       
       {/* Dashboard redirect based on role */}
       <Route 
