@@ -9,12 +9,17 @@ import Auth from "./pages/Auth";
 import AdminDashboard from "./pages/dashboards/AdminDashboard";
 import CustomerDashboard from "./pages/dashboards/CustomerDashboard";
 import UserDashboard from "./pages/dashboards/UserDashboard";
+import UserProfile from "./pages/dashboards/UserProfile";
+import FormsList from "./pages/dashboards/FormsList";
+import FormDetails from "./pages/dashboards/FormDetails";
+import QueueTracking from "./pages/dashboards/QueueTracking";
+import HelpAccessibility from "./pages/dashboards/HelpAccessibility";
 import NotFound from "./pages/NotFound";
 import React, { useEffect } from "react";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { DashboardLayout } from "./components/dashboard/DashboardLayout";
-import { Link } from "lucide-react";
+import { SpeechToText } from "./components/SpeechToText";
 
 const queryClient = new QueryClient();
 
@@ -66,10 +71,11 @@ const AppRoutes = () => {
         }
       >
         <Route index element={<UserDashboard />} />
-        <Route path="forms" element={<div className="p-6">Forms page content</div>} />
-        <Route path="queue" element={<div className="p-6">Queue position page content</div>} />
-        <Route path="profile" element={<div className="p-6">Profile page content</div>} />
-        <Route path="help" element={<div className="p-6">Help & Accessibility page content</div>} />
+        <Route path="forms" element={<FormsList />} />
+        <Route path="forms/:formId" element={<FormDetails />} />
+        <Route path="queue" element={<QueueTracking />} />
+        <Route path="profile" element={<UserProfile />} />
+        <Route path="help" element={<HelpAccessibility />} />
       </Route>
       
       {/* Dashboard redirect based on role */}
@@ -93,6 +99,7 @@ const App = () => {
         <BrowserRouter>
           <AuthProvider>
             <AppRoutes />
+            <SpeechToText />
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>

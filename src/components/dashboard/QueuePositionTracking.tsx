@@ -1,28 +1,41 @@
 
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useEffect, useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Clock, ArrowRight, Loader2 } from 'lucide-react';
+import { Clock, ArrowRight, Loader2, RefreshCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
-export const QueueStatus: React.FC = () => {
+export const QueuePositionTracking = () => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [refreshing, setRefreshing] = useState(false);
   
-  // Simplified version that fetches the basic queue data for the dashboard card
-  const { data: queueData, isLoading } = useQuery({
-    queryKey: ['queue-status'],
+  // Fetch user's queue position
+  const { 
+    data: queueData, 
+    isLoading, 
+    error,
+    refetch
+  } = useQuery({
+    queryKey: ['queue-position'],
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated');
       
       // Get the user's queue entry
       const { data: userQueue, error: userQueueError } = await supabase
         .from('queue_entries')
-        .select('*, submission:submission_id(form:form_id(title))')
+        .select(`
+          *,
+          submission:submission_id(
+            form:form_id(title)
+          ),
+          organization:organization_id(name)
+        `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -67,16 +80,66 @@ export const QueueStatus: React.FC = () => {
     enabled: !!user,
   });
   
+  const manualRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refetch();
+      toast.success('Queue position updated');
+    } catch (err) {
+      toast.error('Failed to update queue position');
+    } finally {
+      setRefreshing(false);
+    }
+  };
+  
+  // Setup real-time subscription to queue changes
+  useEffect(() => {
+    if (!user || !queueData) return;
+    
+    const channel = supabase
+      .channel('queue-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'queue_entries',
+          filter: `organization_id=eq.${queueData.organization_id}`
+        },
+        () => {
+          // Refetch queue data when there are changes
+          queryClient.invalidateQueries({ queryKey: ['queue-position'] });
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, queueData, queryClient]);
+  
   if (isLoading) {
     return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
       <Card>
-        <CardHeader className="pb-3">
-          <CardTitle>Your Queue Status</CardTitle>
+        <CardHeader>
+          <CardTitle>Error Loading Queue</CardTitle>
+          <CardDescription>
+            We couldn't load your queue position. Please try again.
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex justify-center items-center py-6">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
+          <Button onClick={manualRefresh} disabled={refreshing}>
+            {refreshing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCcw className="mr-2 h-4 w-4" />}
+            Retry
+          </Button>
         </CardContent>
       </Card>
     );
@@ -85,17 +148,12 @@ export const QueueStatus: React.FC = () => {
   if (!queueData) {
     return (
       <Card>
-        <CardHeader className="pb-3">
-          <CardTitle>Your Queue Status</CardTitle>
+        <CardHeader>
+          <CardTitle>Not In Queue</CardTitle>
+          <CardDescription>
+            You are not currently in any queue. Submit a form to enter a queue.
+          </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <p className="text-muted-foreground">You are not currently in any queue.</p>
-            <Button asChild>
-              <Link to="/dashboard/user/forms">Submit a Form</Link>
-            </Button>
-          </div>
-        </CardContent>
       </Card>
     );
   }
@@ -108,9 +166,20 @@ export const QueueStatus: React.FC = () => {
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle>Your Queue Status</CardTitle>
-          <Badge variant={position <= 3 ? "destructive" : "default"}>
-            {position <= 3 ? "Almost Your Turn" : "In Queue"}
-          </Badge>
+          <div className="flex gap-2 items-center">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={manualRefresh}
+              disabled={refreshing}
+              className="h-8 w-8"
+            >
+              <RefreshCcw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            </Button>
+            <Badge variant={position <= 3 ? "destructive" : "default"}>
+              {position <= 3 ? "Almost Your Turn" : "In Queue"}
+            </Badge>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -140,15 +209,10 @@ export const QueueStatus: React.FC = () => {
           
           <div className="bg-primary/5 p-4 rounded-lg border border-primary/20 flex items-center">
             <div className="flex-1">
-              <div className="font-medium">Service: {queueData.submission?.form?.title || 'Document Verification'}</div>
-              <div className="text-sm text-gray-500 mt-1">Department of Administration</div>
+              <div className="font-medium">Service: {queueData.submission?.form?.title || 'Document Processing'}</div>
+              <div className="text-sm text-gray-500 mt-1">{queueData.organization?.name || 'Department of Administration'}</div>
             </div>
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/dashboard/user/queue">
-                <span>View Details</span>
-                <ArrowRight className="ml-1 h-4 w-4 text-primary" />
-              </Link>
-            </Button>
+            <ArrowRight className="text-primary" />
           </div>
         </div>
       </CardContent>

@@ -1,15 +1,17 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Mic, MicOff, Clipboard, Check } from 'lucide-react';
+import { Mic, MicOff, Clipboard, Check, X, Volume2 } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
+import { toast } from 'sonner';
 
 export const SpeechToText: React.FC = () => {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [copied, setCopied] = useState(false);
   const [recognition, setRecognition] = useState<SpeechRecognition | null>(null);
-  const { toast } = useToast();
+  const [error, setError] = useState<string | null>(null);
+  const [supported, setSupported] = useState(true);
 
   useEffect(() => {
     if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
@@ -31,11 +33,8 @@ export const SpeechToText: React.FC = () => {
       recognitionInstance.onerror = (event) => {
         console.error('Speech recognition error', event.error);
         setIsListening(false);
-        toast({
-          title: "Recognition Error",
-          description: `Error: ${event.error}. Please try again.`,
-          variant: "destructive",
-        });
+        setError(`Error: ${event.error}. Please try again.`);
+        toast.error(`Recognition Error: ${event.error}. Please try again.`);
       };
       
       recognitionInstance.onend = () => {
@@ -46,11 +45,9 @@ export const SpeechToText: React.FC = () => {
       
       setRecognition(recognitionInstance);
     } else {
-      toast({
-        title: "Not Supported",
-        description: "Speech recognition is not supported in your browser.",
-        variant: "destructive",
-      });
+      setSupported(false);
+      setError("Speech recognition is not supported in your browser.");
+      toast.error("Speech recognition is not supported in your browser.");
     }
     
     return () => {
@@ -64,16 +61,31 @@ export const SpeechToText: React.FC = () => {
     if (!recognition) return;
     
     if (isListening) {
-      recognition.start();
+      try {
+        recognition.start();
+        toast.success("Listening... Speak now");
+      } catch (e) {
+        console.error("Failed to start recognition", e);
+      }
     } else {
       recognition.stop();
     }
   }, [isListening, recognition]);
 
   const toggleListening = () => {
+    if (!supported) {
+      toast.error("Speech recognition is not supported in your browser.");
+      return;
+    }
+    
     setIsListening(!isListening);
     if (!isListening && transcript) {
       setTranscript('');
+    }
+    
+    // Reset any previous errors when starting
+    if (!isListening) {
+      setError(null);
     }
   };
 
@@ -83,37 +95,72 @@ export const SpeechToText: React.FC = () => {
     navigator.clipboard.writeText(transcript)
       .then(() => {
         setCopied(true);
-        toast({
-          title: "Copied!",
-          description: "Text copied to clipboard.",
-        });
+        toast.success("Text copied to clipboard");
         
         setTimeout(() => setCopied(false), 2000);
       })
       .catch(err => {
         console.error('Failed to copy text: ', err);
-        toast({
-          title: "Copy Failed",
-          description: "Failed to copy text to clipboard.",
-          variant: "destructive",
-        });
+        toast.error("Failed to copy text to clipboard");
       });
+  };
+  
+  const clearTranscript = () => {
+    setTranscript('');
+  };
+  
+  const readAloud = () => {
+    if (!transcript) return;
+    
+    const utterance = new SpeechSynthesisUtterance(transcript);
+    window.speechSynthesis.speak(utterance);
+    toast.success("Reading text aloud");
   };
 
   return (
     <div className={`fixed bottom-6 right-6 z-50 flex flex-col items-end space-y-3 transition-all duration-300 ${transcript ? 'scale-100' : 'scale-100'}`}>
       {transcript && (
         <div className="bg-white w-72 max-w-xs rounded-lg shadow-lg p-4 glass animate-scale-in border border-border">
-          <p className="text-sm font-medium mb-3">Speech Recognition</p>
+          <div className="flex justify-between items-center mb-3">
+            <p className="text-sm font-medium">Speech Recognition</p>
+            <div className="flex space-x-1">
+              {transcript && (
+                <>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={readAloud}
+                    title="Read aloud"
+                  >
+                    <Volume2 size={14} />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={clearTranscript}
+                    title="Clear text"
+                  >
+                    <X size={14} />
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
           <p className="text-sm text-foreground/80 mb-3 break-words max-h-32 overflow-y-auto">
             {transcript}
           </p>
+          {error && (
+            <p className="text-xs text-destructive mb-3">{error}</p>
+          )}
           <div className="flex justify-end">
             <Button
               variant="outline"
               size="sm"
               className="flex items-center space-x-1 h-8"
               onClick={copyToClipboard}
+              disabled={!transcript}
             >
               {copied ? (
                 <>
@@ -140,6 +187,8 @@ export const SpeechToText: React.FC = () => {
             : 'bg-primary hover:bg-primary/90'
         }`}
         aria-label={isListening ? "Stop listening" : "Start speech recognition"}
+        disabled={!supported}
+        title={supported ? (isListening ? "Stop listening" : "Start speech recognition") : "Not supported in this browser"}
       >
         {isListening ? (
           <MicOff size={20} className="text-white" />
