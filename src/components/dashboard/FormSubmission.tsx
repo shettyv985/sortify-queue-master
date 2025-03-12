@@ -15,6 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Json } from '@/integrations/supabase/types';
 
 const FormSubmission = () => {
   const { formId } = useParams();
@@ -56,7 +57,7 @@ const FormSubmission = () => {
       if (field.required) {
         fieldSchema = fieldSchema.min(1, `${field.label} is required`);
       } else {
-        fieldSchema = fieldSchema.optional();
+        fieldSchema = z.string().optional();
       }
       
       schemaObj[field.id] = fieldSchema;
@@ -191,16 +192,20 @@ const FormSubmission = () => {
                               <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
                             </SelectTrigger>
                             <SelectContent>
-                              {Array.isArray(field.options) && field.options.map((option, index) => (
-                                <SelectItem key={index} value={typeof option === 'object' ? option.value || '' : option}>
-                                  {typeof option === 'object' ? option.label || option.value : option}
-                                </SelectItem>
-                              ))}
+                              {Array.isArray(field.options) && field.options.map((option, index) => {
+                                const optionValue = typeof option === 'object' ? option.value || '' : option;
+                                const optionLabel = typeof option === 'object' ? option.label || optionValue : option;
+                                return (
+                                  <SelectItem key={index} value={optionValue}>
+                                    {optionLabel}
+                                  </SelectItem>
+                                );
+                              })}
                             </SelectContent>
                           </Select>
                         )}
                       </FormControl>
-                      {field.description && (
+                      {field.hasOwnProperty('description') && (
                         <FormDescription>{field.description}</FormDescription>
                       )}
                       <FormMessage />

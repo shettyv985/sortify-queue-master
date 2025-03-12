@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
@@ -56,7 +55,7 @@ export default function CustomerDashboard() {
         const { data: submissionsData, error: submissionsError } = await supabase
           .from('submissions')
           .select('id', { count: 'exact' })
-          .eq('form_id', formsData?.map(form => form.id));
+          .eq('form_id', formId => formsData?.map(form => form.id).includes(formId));
           
         if (submissionsError) throw submissionsError;
         
