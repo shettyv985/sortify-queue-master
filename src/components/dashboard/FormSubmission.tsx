@@ -91,7 +91,7 @@ const FormSubmission = () => {
         .insert({
           form_id: formId,
           user_id: user.id,
-          data: formValues,
+          data: formValues
         })
         .select('id')
         .single();
@@ -191,9 +191,9 @@ const FormSubmission = () => {
                               <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
                             </SelectTrigger>
                             <SelectContent>
-                              {field.options.map((option, index) => (
-                                <SelectItem key={index} value={option.value || option}>
-                                  {option.label || option}
+                              {Array.isArray(field.options) && field.options.map((option, index) => (
+                                <SelectItem key={index} value={typeof option === 'object' ? option.value || '' : option}>
+                                  {typeof option === 'object' ? option.label || option.value : option}
                                 </SelectItem>
                               ))}
                             </SelectContent>
