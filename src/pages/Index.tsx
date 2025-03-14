@@ -1,42 +1,71 @@
+
 import React, { useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { Hero } from '@/components/Hero';
 import { Features } from '@/components/Features';
 import { Button } from '@/components/ui/button';
-import { Mic, Users, ClipboardList, Check, SlidersHorizontal } from 'lucide-react';
+import { Mic, Users, ClipboardList, Check, SlidersHorizontal, ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const Index: React.FC = () => {
+  const navigate = useNavigate();
+
   useEffect(() => {
+    // Improved intersection observer with better threshold values
     const observerOptions = {
       root: null,
       rootMargin: '0px',
-      threshold: 0.1,
+      threshold: 0.15, // Slightly higher threshold for better trigger timing
     };
 
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
-          entry.target.classList.add('animate-slide-up');
+          // Add a slight delay based on data attribute for staggered animations
+          const delay = entry.target.getAttribute('data-delay') || '0';
+          setTimeout(() => {
+            entry.target.classList.add('animate-slide-up');
+            entry.target.classList.remove('opacity-0');
+          }, parseInt(delay));
           observer.unobserve(entry.target);
         }
       });
     }, observerOptions);
 
     const hiddenElements = document.querySelectorAll('.animate-on-scroll');
-    hiddenElements.forEach((el) => observer.observe(el));
+    hiddenElements.forEach((el, index) => {
+      // Set data-delay attribute for staggered animations if not already present
+      if (!el.getAttribute('data-delay')) {
+        el.setAttribute('data-delay', (index * 100).toString());
+      }
+      observer.observe(el);
+    });
 
     return () => {
       hiddenElements.forEach((el) => observer.unobserve(el));
     };
   }, []);
 
+  const handleLearnMore = (sectionId: string) => {
+    const section = document.getElementById(sectionId);
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+  
+  const handleGetStarted = () => {
+    navigate('/auth');
+  };
+
   return (
     <Layout>
       <Hero />
       
-      <Features />
+      <div id="features">
+        <Features />
+      </div>
       
-      <section className="py-20 md:py-32 bg-secondary/30">
+      <section id="roles" className="py-20 md:py-32 bg-secondary/30">
         <div className="container mx-auto px-4 md:px-6">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4 animate-on-scroll opacity-0">
@@ -48,76 +77,70 @@ const Index: React.FC = () => {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-white rounded-xl shadow-sm p-8 border border-border animate-on-scroll opacity-0 transition-all duration-300 hover:shadow-md hover:border-primary/20">
-              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-6">
-                <ClipboardList size={24} className="text-primary" />
+            {[
+              {
+                icon: <ClipboardList size={24} className="text-primary" />,
+                title: "Administrators",
+                features: [
+                  "Build custom registration forms",
+                  "Manage customer registrations",
+                  "Configure queue settings"
+                ],
+                delay: 0
+              },
+              {
+                icon: <SlidersHorizontal size={24} className="text-primary" />,
+                title: "Organizations",
+                features: [
+                  "Set custom sorting priorities",
+                  "Manage queue operations",
+                  "Access analytical insights"
+                ],
+                delay: 100
+              },
+              {
+                icon: <Users size={24} className="text-primary" />,
+                title: "End Users",
+                features: [
+                  "Complete registration forms",
+                  "Track real-time queue position",
+                  "Use speech-to-text accessibility"
+                ],
+                delay: 200
+              }
+            ].map((role, index) => (
+              <div 
+                key={index}
+                className="bg-white rounded-xl shadow-sm p-8 border border-border animate-on-scroll opacity-0 transition-all duration-300 hover:shadow-md hover:border-primary/20 hover:translate-y-[-5px]"
+                data-delay={role.delay}
+              >
+                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-6">
+                  {role.icon}
+                </div>
+                <h3 className="text-xl font-semibold mb-3">{role.title}</h3>
+                <ul className="space-y-3 mb-6">
+                  {role.features.map((feature, featIndex) => (
+                    <li key={featIndex} className="flex items-start">
+                      <Check size={18} className="text-primary mt-0.5 mr-2 flex-shrink-0" />
+                      <span className="text-sm">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Button 
+                  variant="outline" 
+                  className="w-full group"
+                  onClick={() => handleLearnMore('accessibility')}
+                >
+                  <span>Learn More</span>
+                  <ArrowRight className="ml-2 h-4 w-4 transform group-hover:translate-x-1 transition-transform" />
+                </Button>
               </div>
-              <h3 className="text-xl font-semibold mb-3">Administrators</h3>
-              <ul className="space-y-3 mb-6">
-                <li className="flex items-start">
-                  <Check size={18} className="text-primary mt-0.5 mr-2 flex-shrink-0" />
-                  <span className="text-sm">Build custom registration forms</span>
-                </li>
-                <li className="flex items-start">
-                  <Check size={18} className="text-primary mt-0.5 mr-2 flex-shrink-0" />
-                  <span className="text-sm">Manage customer registrations</span>
-                </li>
-                <li className="flex items-start">
-                  <Check size={18} className="text-primary mt-0.5 mr-2 flex-shrink-0" />
-                  <span className="text-sm">Configure queue settings</span>
-                </li>
-              </ul>
-              <Button variant="outline" className="w-full">Learn More</Button>
-            </div>
-            
-            <div className="bg-white rounded-xl shadow-sm p-8 border border-border animate-on-scroll opacity-0 transition-all duration-300 hover:shadow-md hover:border-primary/20" style={{ animationDelay: '100ms' }}>
-              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-6">
-                <SlidersHorizontal size={24} className="text-primary" />
-              </div>
-              <h3 className="text-xl font-semibold mb-3">Organizations</h3>
-              <ul className="space-y-3 mb-6">
-                <li className="flex items-start">
-                  <Check size={18} className="text-primary mt-0.5 mr-2 flex-shrink-0" />
-                  <span className="text-sm">Set custom sorting priorities</span>
-                </li>
-                <li className="flex items-start">
-                  <Check size={18} className="text-primary mt-0.5 mr-2 flex-shrink-0" />
-                  <span className="text-sm">Manage queue operations</span>
-                </li>
-                <li className="flex items-start">
-                  <Check size={18} className="text-primary mt-0.5 mr-2 flex-shrink-0" />
-                  <span className="text-sm">Access analytical insights</span>
-                </li>
-              </ul>
-              <Button variant="outline" className="w-full">Learn More</Button>
-            </div>
-            
-            <div className="bg-white rounded-xl shadow-sm p-8 border border-border animate-on-scroll opacity-0 transition-all duration-300 hover:shadow-md hover:border-primary/20" style={{ animationDelay: '200ms' }}>
-              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-6">
-                <Users size={24} className="text-primary" />
-              </div>
-              <h3 className="text-xl font-semibold mb-3">End Users</h3>
-              <ul className="space-y-3 mb-6">
-                <li className="flex items-start">
-                  <Check size={18} className="text-primary mt-0.5 mr-2 flex-shrink-0" />
-                  <span className="text-sm">Complete registration forms</span>
-                </li>
-                <li className="flex items-start">
-                  <Check size={18} className="text-primary mt-0.5 mr-2 flex-shrink-0" />
-                  <span className="text-sm">Track real-time queue position</span>
-                </li>
-                <li className="flex items-start">
-                  <Check size={18} className="text-primary mt-0.5 mr-2 flex-shrink-0" />
-                  <span className="text-sm">Use speech-to-text accessibility</span>
-                </li>
-              </ul>
-              <Button variant="outline" className="w-full">Learn More</Button>
-            </div>
+            ))}
           </div>
         </div>
       </section>
       
-      <section className="py-20 md:py-32 bg-white">
+      <section id="accessibility" className="py-20 md:py-32 bg-white">
         <div className="container mx-auto px-4 md:px-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="animate-on-scroll opacity-0">
@@ -144,15 +167,21 @@ const Index: React.FC = () => {
                   <span>Multiple language support</span>
                 </li>
               </ul>
-              <Button>Try It Now</Button>
+              <Button 
+                className="group"
+                onClick={handleGetStarted}
+              >
+                <span>Try It Now</span>
+                <ArrowRight className="ml-2 h-4 w-4 transform group-hover:translate-x-1 transition-transform" />
+              </Button>
             </div>
             
-            <div className="relative animate-on-scroll opacity-0" style={{ animationDelay: '100ms' }}>
-              <div className="relative bg-gray-50 rounded-2xl p-8 border border-border overflow-hidden">
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-primary/20 rounded-full animate-pulse-slow"></div>
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-20 h-20 bg-primary/30 rounded-full animate-pulse-slow" style={{ animationDelay: '1s' }}></div>
+            <div className="relative animate-on-scroll opacity-0" data-delay="100">
+              <div className="relative bg-gray-50 rounded-2xl p-8 border border-border overflow-hidden shadow-sm">
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-primary/20 rounded-full animate-pulse" style={{ animationDuration: "3s" }}></div>
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-20 h-20 bg-primary/30 rounded-full animate-pulse" style={{ animationDuration: "2s", animationDelay: "1s" }}></div>
                 <div className="relative flex items-center justify-center py-12">
-                  <div className="h-16 w-16 rounded-full bg-primary flex items-center justify-center shadow-lg animate-float">
+                  <div className="h-16 w-16 rounded-full bg-primary flex items-center justify-center shadow-lg animate-bounce" style={{ animationDuration: "2s" }}>
                     <Mic size={28} className="text-white" />
                   </div>
                 </div>
@@ -166,7 +195,7 @@ const Index: React.FC = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-8 text-xs flex items-center space-x-1"
+                      className="h-8 text-xs flex items-center space-x-1 group"
                     >
                       <Check size={12} />
                       <span>Copy</span>
@@ -184,11 +213,17 @@ const Index: React.FC = () => {
           <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-6 text-white animate-on-scroll opacity-0">
             Ready to Transform Your Queue Experience?
           </h2>
-          <p className="text-lg text-white/90 max-w-2xl mx-auto mb-8 animate-on-scroll opacity-0" style={{ animationDelay: '100ms' }}>
+          <p className="text-lg text-white/90 max-w-2xl mx-auto mb-8 animate-on-scroll opacity-0" data-delay="100">
             Join organizations across industries that are streamlining operations and enhancing user experiences with our universal queue management system.
           </p>
-          <Button size="lg" className="bg-white text-primary hover:bg-white/90 animate-on-scroll opacity-0" style={{ animationDelay: '200ms' }}>
-            Get Started Today
+          <Button 
+            size="lg" 
+            className="bg-white text-primary hover:bg-white/90 animate-on-scroll opacity-0 group"
+            data-delay="200"
+            onClick={handleGetStarted}
+          >
+            <span>Get Started Today</span>
+            <ArrowRight className="ml-2 h-5 w-5 transform group-hover:translate-x-1 transition-transform" />
           </Button>
         </div>
       </section>
